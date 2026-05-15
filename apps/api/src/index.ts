@@ -68,6 +68,8 @@ const OPENAPI_PATH = (() => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const bundled = path.join(here, 'openapi.yaml');
   if (existsSync(bundled)) return bundled;
+  const inApiPackage = path.resolve(here, '../../contracts/openapi.yaml');
+  if (existsSync(inApiPackage)) return inApiPackage;
   return path.resolve(here, '../../../contracts/openapi.yaml');
 })();
 

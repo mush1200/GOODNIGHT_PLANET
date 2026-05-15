@@ -31,7 +31,7 @@
    apps/api
    ```
 
-   Railway 只會在此目錄執行 build／start；`npm run build` 會把根目錄的 `contracts/openapi.yaml` 複製到 `dist/`。
+   Railway 只會在此目錄執行 build／start；`npm run build` 會把 `apps/api/contracts/openapi.yaml` 複製到 `dist/`（改根目錄 `contracts/openapi.yaml` 後請同步，見 `apps/api/contracts/README.md`）。
 
 ### Build Command
 
