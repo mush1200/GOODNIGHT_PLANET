@@ -17,10 +17,11 @@
 
 ### 1. 資料庫
 
-複製範例設定（已含 `PGHOST` … `PGDATABASE` 與 `DATABASE_URL`）：
+複製範例設定並**自行填入**（repo 內不含任何真實密碼）：
 
 ```bash
 copy apps\api\.env.example apps\api\.env
+# 編輯 apps\api\.env：至少設定 DATABASE_URL（或 PGPASSWORD + PGDATABASE）
 ```
 
 若 PostgreSQL 尚無目標庫，先建立再 migration：

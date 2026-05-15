@@ -1,10 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import cors from 'cors';
-import 'dotenv/config';
 import express from 'express';
-import pg from 'pg';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yaml';
 import { z } from 'zod';
@@ -37,9 +35,13 @@ import { isValidLocalHm, targetSleepDurationMinutes } from './sleepSchedule.js';
 import { normalizePetArchetype, pushTemplatePayload } from './templateGoodnight.js';
 import { worldAttunementState } from './worldAttunement.js';
 import { CANCEL_SLEEP_MESSAGES, MOON_GUARD_MESSAGES } from './userFacingStrings.js';
+import { buildCorsOptions } from './cors.js';
+import { createPool } from './db.js';
+import { loadEnv } from './env.js';
+import { registerProcessHandlers, startServer } from './server.js';
 
-const PORT = Number(process.env.PORT ?? 3333);
-export const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const env = loadEnv();
+export const pool = createPool(env);
 
 function isMainModule(): boolean {
   const entry = process.argv[1];
@@ -52,7 +54,7 @@ function isMainModule(): boolean {
 }
 
 export const app = express();
-app.use(cors());
+app.use(cors(buildCorsOptions(env)));
 app.use(express.json());
 
 /**
@@ -64,6 +66,8 @@ app.use(express.json());
  */
 const OPENAPI_PATH = (() => {
   const here = path.dirname(fileURLToPath(import.meta.url));
+  const bundled = path.join(here, 'openapi.yaml');
+  if (existsSync(bundled)) return bundled;
   return path.resolve(here, '../../../contracts/openapi.yaml');
 })();
 
@@ -887,11 +891,10 @@ app.post('/v1/unbox', async (req, res) => {
 });
 
 if (isMainModule()) {
-  app.listen(PORT, () => {
-    console.log(`Goodnight Planet API listening on :${PORT}`);
-    console.log(`  Swagger UI    : http://localhost:${PORT}/docs`);
-    console.log(`  OpenAPI YAML  : http://localhost:${PORT}/openapi.yaml`);
-    console.log(`  OpenAPI JSON  : http://localhost:${PORT}/openapi.json`);
+  registerProcessHandlers(pool);
+  startServer(app, pool, env).catch((err) => {
+    console.error('[startup] failed:', err);
+    process.exit(1);
   });
 }
 

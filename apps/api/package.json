@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
-    "build": "tsc",
+    "start": "node dist/migrate.js && node dist/index.js",
+    "build": "tsc && node scripts/copy-openapi.mjs",
     "db:create": "tsx scripts/create-db.ts",
-    "migrate": "tsx scripts/migrate.ts",
+    "migrate": "tsx src/migrate.ts",
     "test": "vitest run",
     "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=20.19.4"
   },
   "dependencies": {
     "cors": "^2.8.5",

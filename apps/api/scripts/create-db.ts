@@ -1,17 +1,14 @@
 import 'dotenv/config';
 import pg from 'pg';
+import { loadPgAdminConfig } from '../src/loadPgConfig.js';
 
 /**
- * 連到系統庫 `postgres`，建立 PGDATABASE（預設 GOODNIGHT_PLANET）。
- * 不依賴 DATABASE_URL 的目標庫——避免「庫尚未存在」時無法連線。
+ * 連到系統庫 `postgres`，建立 PGDATABASE。
+ * 憑證僅來自 `DATABASE_URL` 或 `PGPASSWORD`（見 `.env.example`）。
  */
-const host = process.env.PGHOST ?? 'localhost';
-const port = Number(process.env.PGPORT ?? 5432);
-const user = process.env.PGUSER ?? 'postgres';
-const password = process.env.PGPASSWORD ?? '123456';
-const targetDb = process.env.PGDATABASE ?? 'GOODNIGHT_PLANET';
-
 async function main() {
+  const { host, port, user, password, targetDb } = loadPgAdminConfig();
+
   const admin = new pg.Client({
     host,
     port,

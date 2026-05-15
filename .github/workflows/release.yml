@@ -13,7 +13,8 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          # Not stored in repo — set in GitHub → Settings → Secrets → CI_POSTGRES_PASSWORD
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
           POSTGRES_DB: goodnight_planet_test
         ports:
           - 5432:5432
@@ -22,10 +23,17 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/goodnight_planet_test
     steps:
       - uses: actions/checkout@v4
+      - name: Set CI DATABASE_URL
+        env:
+          CI_POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        run: |
+          if [ -z "$CI_POSTGRES_PASSWORD" ]; then
+            echo "::error::Set repository secret CI_POSTGRES_PASSWORD (see .github/CI_SETUP.md)"
+            exit 1
+          fi
+          echo "DATABASE_URL=postgresql://postgres:${CI_POSTGRES_PASSWORD}@localhost:5432/goodnight_planet_test" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
