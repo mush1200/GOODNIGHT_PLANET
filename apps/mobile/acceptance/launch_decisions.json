@@ -1,0 +1,17 @@
+{
+  "accountMultidevice": {
+    "decision": "post_launch",
+    "anchor": "docs/05_DOMAIN_AND_PERMISSIONS.md",
+    "summary": "Keep x-device-id for RC; account merge waits for Launch account system."
+  },
+  "tierFourAndContent": {
+    "decision": "tier_four_ui_only_for_rc",
+    "anchor": "docs/game_balance_tables.md",
+    "summary": "Ship tier-four scene narrative in-app; defer seasonal pools and dream volume expansion to post-RC."
+  },
+  "tabDeepLinkManualRecord": {
+    "decision": "excluded_from_slice",
+    "anchor": "apps/mobile/src/deviceMigration.ts",
+    "summary": "No tab/deep-link navigation and no manual sleep-record App entry in RC."
+  }
+}

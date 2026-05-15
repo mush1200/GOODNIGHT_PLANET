@@ -1,0 +1,43 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "vitest run && jest",
+    "e2e:maestro": "maestro test .maestro/night-flow.yaml",
+    "store-assets:generate": "node ../../scripts/generate-store-assets.mjs",
+    "sound-pack:generate": "node ../../scripts/generate-sound-pack.mjs",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@types/jest": "29.5.14",
+    "expo": "~54.0.33",
+    "expo-audio": "~1.1.1",
+    "expo-device": "~8.0.10",
+    "expo-notifications": "~0.32.17",
+    "expo-status-bar": "~3.0.9",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.17",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^13.3.3",
+    "@types/react": "~19.1.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "patch-package": "^8.0.0",
+    "react-test-renderer": "^19.1.0",
+    "typescript": "~5.9.2",
+    "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "private": true
+}

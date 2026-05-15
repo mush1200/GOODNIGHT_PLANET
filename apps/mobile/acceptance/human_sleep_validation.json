@@ -1,0 +1,7 @@
+{
+  "checklistItem": "12.2.1",
+  "status": "in_progress",
+  "windowDays": 7,
+  "schema": "human_sleep_validation.schema.json",
+  "records": []
+}

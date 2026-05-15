@@ -1,0 +1,11 @@
+{
+  "screenshots": [
+    "docs/store_assets/screenshot_01_home.png",
+    "docs/store_assets/screenshot_02_ritual.png",
+    "docs/store_assets/screenshot_03_sleeping.png",
+    "docs/store_assets/screenshot_04_memory.png",
+    "docs/store_assets/screenshot_05_world.png"
+  ],
+  "privacy": "docs/store_assets/privacy_policy.md",
+  "data_disclosure": "docs/store_assets/data_disclosure.md"
+}

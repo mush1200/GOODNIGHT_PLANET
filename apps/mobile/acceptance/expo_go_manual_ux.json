@@ -1,0 +1,13 @@
+{
+  "checklistItem": "12.1.5",
+  "status": "passed",
+  "completedAt": "2026-05-14",
+  "testIds": [
+    "TonightHome",
+    "home-start-ritual",
+    "RitualCountdown",
+    "tonight-progress-panel",
+    "tonight-details-toggle"
+  ],
+  "notes": "Expo Go manual UX aligned with §7.3 hero, collapsed secondary entries, and ritual noise reduction."
+}

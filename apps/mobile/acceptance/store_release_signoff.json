@@ -1,0 +1,7 @@
+{
+  "checklistItem": "12.3.4",
+  "status": "passed",
+  "completedAt": "2026-05-14",
+  "manifest": "docs/store_assets_manifest.json",
+  "notes": "Store screenshots, privacy policy, and data disclosure aligned with store_copy.md."
+}

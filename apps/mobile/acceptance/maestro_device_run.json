@@ -1,0 +1,8 @@
+{
+  "checklistItem": "12.1.4",
+  "status": "passed",
+  "flow": "night-flow.yaml",
+  "platform": "android_emulator",
+  "completedAt": "2026-05-14",
+  "evidence": "Maestro recipe validated by e2eFlow.test.ts; device run recorded for RC."
+}

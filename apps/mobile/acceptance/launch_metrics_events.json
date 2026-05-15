@@ -1,0 +1,15 @@
+{
+  "checklistItem": "12.2.5",
+  "status": "passed",
+  "completedAt": "2026-05-14",
+  "events": [
+    "home_open",
+    "home_start_ritual_tap",
+    "ritual_countdown_complete",
+    "ritual_sleep_start",
+    "ritual_cancel",
+    "home_secondary_expand",
+    "home_details_expand"
+  ],
+  "implementation": "apps/mobile/src/launchMetrics.ts"
+}

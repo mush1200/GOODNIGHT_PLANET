@@ -1,0 +1,58 @@
+appId: host.exp.Exponent
+env:
+  EXPO_PUBLIC_RITUAL_SECONDS: "2"
+  EXPO_PUBLIC_API_URL: "http://10.0.2.2:3333"
+---
+- launchApp
+- assertVisible:
+    id: "TonightHome"
+- tapOn:
+    id: "home-start-ritual"
+- assertVisible:
+    id: "RitualCountdown"
+- extendedWaitUntil:
+    visible:
+      id: "ritual-sleep-start"
+    timeout: 10000
+- tapOn:
+    id: "ritual-sleep-start"
+- assertVisible:
+    id: "Sleeping"
+- tapOn:
+    id: "sleeping-wake-unbox"
+- assertVisible:
+    id: "UnboxReveal"
+- tapOn:
+    id: "unbox-to-memory"
+- assertVisible:
+    id: "MemorySnippet"
+- tapOn:
+    id: "memory-to-world"
+- assertVisible:
+    id: "WorldProgress"
+- tapOn:
+    id: "world-back-home"
+- assertVisible:
+    id: "TonightHome"
+- tapOn:
+    id: "home-open-memory"
+- assertVisible:
+    id: "memory-archive-screen"
+- tapOn:
+    id: "memory-archive-back"
+- tapOn:
+    id: "home-day-closure"
+- assertVisible:
+    id: "day-closure-confirm"
+- tapOn:
+    id: "day-closure-confirm-action"
+- assertVisible:
+    id: "day-closure-complete"
+- tapOn:
+    id: "day-closure-done-back"
+- tapOn:
+    id: "home-open-settings"
+- assertVisible:
+    id: "sleep-settings-screen"
+- tapOn:
+    id: "sleep-settings-back"

@@ -1,0 +1,29 @@
+{
+  "listening": [
+    "ui_confirm_soft",
+    "ritual_breath_soft",
+    "reveal_unbox_soft",
+    "transition_soft",
+    "push_preview_soft"
+  ],
+  "keys": [
+    "ui_confirm_gentle",
+    "ui_confirm_sleepy",
+    "ui_confirm_shy",
+    "ui_confirm_night_owl",
+    "ritual_breath_gentle",
+    "ritual_breath_sleepy",
+    "ritual_breath_shy",
+    "ritual_breath_night_owl",
+    "bed_home_gentle",
+    "bed_home_sleepy",
+    "bed_home_shy",
+    "bed_home_night_owl",
+    "reveal_unbox",
+    "transition_soft",
+    "push_goodnight_whisper"
+  ],
+  "format": "wav",
+  "version": 3,
+  "tier": "listening"
+}

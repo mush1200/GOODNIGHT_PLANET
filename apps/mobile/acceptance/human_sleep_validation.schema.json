@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HumanSleepValidationRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["calm", "pressure", "clarity_10s", "blockingIssues", "notes"],
+  "properties": {
+    "calm": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "睡前整體是否讓人慢下來（1=很難，5=很安靜）"
+    },
+    "pressure": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "是否感到任務感、催促或罪惡感（1=幾乎沒有，5=壓力很大）"
+    },
+    "clarity_10s": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "打開首屏約 10 秒內是否知道該做什麼（1=不清楚，5=很清楚）"
+    },
+    "blockingIssues": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "若為非空陣列，代表該晚不應簽核通過"
+    },
+    "notes": {
+      "type": "string",
+      "description": "當晚質性觀察（太吵、太亮、太像 productivity app 等）"
+    }
+  }
+}

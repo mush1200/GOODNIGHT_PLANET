@@ -1,0 +1,814 @@
+openapi: 3.1.0
+info:
+  title: Goodnight Planet API
+  version: 0.2.0
+  description: |
+    Aligns with GOODNIGHT_PLANET_MVP_SPEC v1.5.5, MVP_DEV_CHECKLIST §1～§4 and
+    docs/game_balance_tables.md v0.2（§1～§8）。
+
+    Slice 認證採 `x-device-id` header；無 / 未知裝置回 401。
+    日期欄位皆指 `logical_sleep_date`（見 `logicalDate.ts` 與平衡表 §1）。
+
+    互動式文件：
+      - Swagger UI：`/docs`
+      - 原始規格：`/openapi.yaml`、`/openapi.json`
+
+servers:
+  - url: http://localhost:3333
+    description: 本機開發（Node `npm --prefix apps/api run dev`）
+  - url: http://10.0.2.2:3333
+    description: Android 模擬器（loopback 對應主機 localhost）
+
+tags:
+  - name: health
+  - name: bootstrap
+  - name: today
+  - name: ritual
+  - name: sleep
+  - name: unbox
+  - name: memory
+  - name: moon-guard
+  - name: me
+  - name: push
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /v1/bootstrap:
+    post:
+      tags: [bootstrap]
+      summary: 建立或解析裝置使用者（Slice 認證）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId]
+              properties:
+                deviceId:
+                  type: string
+                  minLength: 4
+      responses:
+        '200':
+          description: User resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BootstrapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /v1/today:
+    get:
+      tags: [today]
+      summary: 今夜首屏（夜空、進度、世界、可逆牽掛、新手期、月亮守護、星塵餘額）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Today snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodayResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/me/sleep-schedule:
+    patch:
+      tags: [me]
+      summary: 更新就寢／起床偏好與推播開關（§5.1、checklist 2.9.1）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetSleepTimeLocal:
+                  type: string
+                  nullable: true
+                  description: 本地 HH:mm；null 代表清除
+                  pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+                wakeTimeLocal:
+                  type: string
+                  nullable: true
+                  pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+                pushReminderEnabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pushReminderEnabled]
+                properties:
+                  targetSleepTimeLocal:
+                    type: string
+                    nullable: true
+                  wakeTimeLocal:
+                    type: string
+                    nullable: true
+                  pushReminderEnabled:
+                    type: boolean
+                  targetSleepDurationMinutes:
+                    type: integer
+                    nullable: true
+                    description: 後端推算之目標時長（分鐘）
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/daily/early-bed:
+    post:
+      tags: [today]
+      summary: 早睡限定旗標（§5.19／checklist 2.8.4），影響開箱倍率
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [earlyBed]
+              properties:
+                earlyBed:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated flag for current logical_sleep_date
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [logicalSleepDate, earlyBedForDream]
+                properties:
+                  logicalSleepDate:
+                    type: string
+                  earlyBedForDream:
+                    type: boolean
+        '400':
+          description: no_daily_state 或 invalid_body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/moon-guard/status:
+    get:
+      tags: [moon-guard]
+      summary: 本週月亮守護用量（§5.16、checklist 2.8.1）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: ISO 週用量
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoonGuardStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/moon-guard/trigger:
+    post:
+      tags: [moon-guard]
+      summary: 觸發本週守護（每 ISO 週 1 次，重複觸發回 ok=false on_cooldown）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 結果（成功或冷卻）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoonGuardTriggerResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/push/reminder-preview:
+    get:
+      tags: [push]
+      summary: 推播召回 mock payload（§5.2、checklist 2.9.2）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - in: query
+          name: templateKey
+          required: true
+          schema:
+            type: string
+            enum: [evening_nudge, ritual_invite]
+        - in: query
+          name: pushEmotionalState
+          required: false
+          schema:
+            type: string
+            enum: [recovering, wilted, missed_you, early_bed, steady_companion, steady]
+      responses:
+        '200':
+          description: 模擬推播
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReminderPushPayload'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/push/template-goodnight:
+    get:
+      tags: [push]
+      summary: 系統短模板（與晚安一句話分離；§5.20、checklist 2.5.5）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - in: query
+          name: templateKey
+          required: true
+          schema:
+            type: string
+            enum: [evening_nudge, ritual_invite]
+        - in: query
+          name: pushEmotionalState
+          required: false
+          schema:
+            type: string
+            enum: [recovering, wilted, missed_you, early_bed, steady_companion, steady]
+      responses:
+        '200':
+          description: 短模板 payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateGoodnightPayload'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/ritual/countdown-complete:
+    post:
+      tags: [ritual]
+      summary: 30s 儀式倒數完成標記
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Countdown recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [logicalSleepDate, ritualCountdownCompleted]
+                properties:
+                  logicalSleepDate:
+                    type: string
+                  ritualCountdownCompleted:
+                    type: boolean
+        '400':
+          description: no_daily_state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/ritual/day-closure:
+    post:
+      tags: [ritual]
+      summary: 可選「今天結束儀式」（§六、checklist 2.5.3），不阻擋主晚安流
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [complete, skip]
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [logicalSleepDate, dayClosureCompleted, dayClosureSkipped]
+                properties:
+                  logicalSleepDate:
+                    type: string
+                  dayClosureCompleted:
+                    type: boolean
+                  dayClosureSkipped:
+                    type: boolean
+        '400':
+          description: invalid_body 或 no_daily_state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/sleep/start:
+    post:
+      tags: [sleep]
+      summary: start_sleep — 使用者按下「我要睡了」
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Sleeping state recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepMutationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/sleep/wake:
+    post:
+      tags: [sleep]
+      summary: wake_up — 起床標記
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Wake recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepMutationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/sleep/cancel:
+    post:
+      tags: [sleep]
+      summary: cancel_sleep — 撤銷今晚入睡（§5.3／柔性文案）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 取消結果（含未開始之 idempotent）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cancelled, message]
+                properties:
+                  cancelled:
+                    type: boolean
+                  message:
+                    type: string
+                    description: 柔性文案；不得包含「失敗／活該／丟臉」
+        '400':
+          description: no_daily_state / cannot_cancel
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/sleep/manual-record:
+    post:
+      tags: [sleep]
+      summary: 手動補登 sleep_records（§5.4、checklist 2.1.2）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [logicalSleepDate, startedAt]
+              properties:
+                logicalSleepDate:
+                  type: string
+                  pattern: '^\d{4}-\d{2}-\d{2}$'
+                startedAt:
+                  type: string
+                  format: date-time
+                endedAt:
+                  type: string
+                  format: date-time
+                dreamKey:
+                  $ref: '#/components/schemas/DreamKey'
+      responses:
+        '201':
+          description: 已寫入（source = manual）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, logicalSleepDate, source]
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  logicalSleepDate:
+                    type: string
+                  source:
+                    type: string
+                    enum: [manual]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/memory-entries:
+    get:
+      tags: [memory]
+      summary: 記憶冊條目（敘事，非圖鑑）
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        '200':
+          description: List
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MemoryEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/unbox:
+    post:
+      tags: [unbox]
+      summary: 起床後開箱：依夜空與平衡表開出夢
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Dream revealed & memory logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnboxResponse'
+        '400':
+          description: no_daily_state / already_unboxed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  parameters:
+    DeviceId:
+      name: x-device-id
+      in: header
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: missing_or_unknown_device
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: 請求體或查詢字串無效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    NightSkyKey:
+      type: string
+      enum: [clear_star, soft_rain, blue_moon]
+
+    DreamKey:
+      type: string
+      enum: [rain_city, star_path, train_whisper, lake_mirror, aurora_hint]
+
+    PetArchetype:
+      type: string
+      description: MVP 預設 gentle；其餘原型 Launch 開
+      enum: [gentle, sleepy, shy, night_owl]
+
+    WorldAttunement:
+      type: string
+      enum: [steady, wilted, recovering]
+
+    OnboardingPhase:
+      type: string
+      enum: [first_night, first_week, settled]
+
+    BootstrapResponse:
+      type: object
+      required: [userId, petName, petArchetype]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        petName:
+          type: string
+        petArchetype:
+          $ref: '#/components/schemas/PetArchetype'
+
+    TodayResponse:
+      type: object
+      required:
+        - logicalSleepDate
+        - nightSky
+        - forecastSummary
+        - rarityNarrativeTag
+        - streakDays
+        - nightsCompleted
+        - worldTier
+        - worldGrowthValue
+        - worldProgressFraction
+        - worldAttunement
+        - daysSinceLastOpenLogical
+        - attunementHint
+        - homeDockHint
+        - onboardingPhase
+        - moonGuardIsoWeek
+        - moonGuardUsesThisWeek
+        - moonGuardCanUse
+        - pushReminderEnabled
+        - ritualCountdownCompleted
+        - sleepStarted
+        - sleeping
+        - unboxed
+        - dayClosureCompleted
+        - dayClosureSkipped
+        - goodnightLine
+        - petArchetype
+        - stardustBalance
+        - earlyBedForDream
+      properties:
+        logicalSleepDate:
+          type: string
+        nightSky:
+          type: object
+          required: [key, displayName]
+          properties:
+            key:
+              $ref: '#/components/schemas/NightSkyKey'
+            displayName:
+              type: string
+        forecastSummary:
+          type: string
+        rarityNarrativeTag:
+          type: string
+          description: 敘事化稀有 tag；禁 SSR/UR/圖鑑用字
+        streakDays:
+          type: integer
+        nightsCompleted:
+          type: integer
+        lastCompletedLogicalDate:
+          type: string
+          nullable: true
+        lastSleepLogicalDate:
+          type: string
+          nullable: true
+        worldTier:
+          type: integer
+          minimum: 1
+          maximum: 4
+        worldGrowthValue:
+          type: integer
+        worldProgressFraction:
+          type: number
+          minimum: 0
+          maximum: 1
+        worldAttunement:
+          $ref: '#/components/schemas/WorldAttunement'
+        daysSinceLastOpenLogical:
+          type: integer
+        attunementHint:
+          type: string
+          nullable: true
+        homeDockHint:
+          type: string
+          nullable: true
+        onboardingPhase:
+          $ref: '#/components/schemas/OnboardingPhase'
+        moonGuardIsoWeek:
+          type: string
+          description: ISO 週鍵（YYYY-Www）
+        moonGuardUsesThisWeek:
+          type: integer
+        moonGuardCanUse:
+          type: boolean
+        targetSleepTimeLocal:
+          type: string
+          nullable: true
+        wakeTimeLocal:
+          type: string
+          nullable: true
+        targetSleepDurationMinutes:
+          type: integer
+          nullable: true
+        pushReminderEnabled:
+          type: boolean
+        ritualCountdownCompleted:
+          type: boolean
+        sleepStarted:
+          type: boolean
+        sleeping:
+          type: boolean
+        unboxed:
+          type: boolean
+        dayClosureCompleted:
+          type: boolean
+        dayClosureSkipped:
+          type: boolean
+        goodnightLine:
+          type: string
+        petArchetype:
+          $ref: '#/components/schemas/PetArchetype'
+        stardustBalance:
+          type: integer
+        earlyBedForDream:
+          type: boolean
+
+    SleepMutationResponse:
+      type: object
+      required: [logicalSleepDate, sleeping]
+      properties:
+        logicalSleepDate:
+          type: string
+        sleeping:
+          type: boolean
+
+    UnboxResponse:
+      type: object
+      required:
+        - logicalSleepDate
+        - dreamKey
+        - dreamName
+        - memoryLine
+        - worldTier
+        - worldGrowthValue
+        - stardustBalance
+      properties:
+        logicalSleepDate:
+          type: string
+        dreamKey:
+          $ref: '#/components/schemas/DreamKey'
+        dreamName:
+          type: string
+        memoryLine:
+          type: string
+          description: 起首為「今晚記住了」之敘事；禁圖鑑/UR/SSR
+        worldTier:
+          type: integer
+        worldGrowthValue:
+          type: integer
+        stardustBalance:
+          type: integer
+
+    MemoryEntry:
+      type: object
+      required: [id, logicalSleepDate, dreamKey, nightSkyKey, narrative, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        logicalSleepDate:
+          type: string
+        dreamKey:
+          $ref: '#/components/schemas/DreamKey'
+        nightSkyKey:
+          $ref: '#/components/schemas/NightSkyKey'
+        narrative:
+          type: string
+        createdAt:
+          type: string
+
+    MoonGuardStatus:
+      type: object
+      required: [isoWeek, usesThisWeek, canUse]
+      properties:
+        isoWeek:
+          type: string
+        usesThisWeek:
+          type: integer
+        canUse:
+          type: boolean
+
+    MoonGuardTriggerResponse:
+      type: object
+      required: [isoWeek, usesThisWeek, message]
+      properties:
+        ok:
+          type: boolean
+          description: false 代表 on_cooldown
+        error:
+          type: string
+          enum: [on_cooldown]
+        isoWeek:
+          type: string
+        usesThisWeek:
+          type: integer
+        message:
+          type: string
+
+    ReminderPushPayload:
+      type: object
+      required: [mock, channel, templateKey, deviceId, pushEmotionalState, title, body]
+      properties:
+        mock:
+          type: boolean
+        channel:
+          type: string
+          enum: [push]
+        templateKey:
+          type: string
+          enum: [evening_nudge, ritual_invite]
+        deviceId:
+          type: string
+        petArchetype:
+          $ref: '#/components/schemas/PetArchetype'
+        pushEmotionalState:
+          type: string
+          enum: [recovering, wilted, missed_you, early_bed, steady_companion, steady]
+        title:
+          type: string
+        body:
+          type: string
+
+    TemplateGoodnightPayload:
+      type: object
+      required: [channel, templateKey, petArchetype, pushEmotionalState, title, body]
+      properties:
+        channel:
+          type: string
+          enum: [push]
+        templateKey:
+          type: string
+          enum: [evening_nudge, ritual_invite]
+        petArchetype:
+          $ref: '#/components/schemas/PetArchetype'
+        pushEmotionalState:
+          type: string
+          enum: [recovering, wilted, missed_you, early_bed, steady_companion, steady]
+        title:
+          type: string
+        body:
+          type: string
+          description: 短模板，<=48 字；§八禁字／語氣黑名單

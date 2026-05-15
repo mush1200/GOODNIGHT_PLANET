@@ -1,0 +1,7 @@
+{
+  "checklistItem": "12.3.3",
+  "status": "passed",
+  "completedAt": "2026-05-14",
+  "anchor": "targetSleepTimeLocal",
+  "notes": "Push permission, quiet-hours cooperation, and in-app reminder scheduling reviewed on device."
+}
